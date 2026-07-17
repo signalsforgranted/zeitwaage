@@ -1,9 +1,12 @@
 [submodule "implementations/ntpd-rs/ntpd-rs"]
 	path = implementations/ntpd-rs/ntpd-rs
 	url = https://github.com/pendulum-project/ntpd-rs.git
+	branch = main
 [submodule "implementations/chrony-ntp5/chrony-ntp5"]
 	path = implementations/chrony-ntp5/chrony-ntp5
 	url = https://github.com/mlichvar/chrony-ntp5.git
+	branch = ntpv5
 [submodule "implementations/ntp5-exp/ntp5-exp"]
 	path = implementations/ntp5-exp/ntp5-exp
 	url = https://github.com/mlichvar/ntp5-exp.git
+	branch = main
