@@ -1,0 +1,10 @@
+name: "zeitwaage"
+services:
+  ntpdrs:
+    build: "./implementations/ntpd-rs"
+
+  chrony-ntp5:
+    build: "./implementations/chrony-ntp5"
+  
+  ntp5-exp:
+    build: "./implementations/ntp5-exp"

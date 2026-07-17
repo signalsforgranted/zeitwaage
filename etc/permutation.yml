@@ -1,0 +1,50 @@
+#  .'`~~~~~~~~~~~`'.     The following variables need setting:
+#  (  .'11 12 1'.  )     * PERM_NAME - Name of the combination of client & server
+#  |  :10 \|   2:  |     * PERM_DIR  - Folder for all output log files, pcaps
+#  |  :9   @   3:  |     * SERVER_IMAGE - Server container image name
+#  |  :8       4;  |     * CLIENT_IMAGE - Client container image name
+#  '. '..7 6 5..' .'
+#   ~-------------~  ldb
+
+name: ${PERM_NAME}
+services:
+  server:
+    hostname: ntp-server
+    image: ${SERVER_IMAGE}
+    pull_policy: never
+    command: /run.sh server
+    volumes:
+      - ${PERM_DIR}:/data
+    networks:
+      plummet:
+        aliases:
+          - ntp-server
+
+  client:
+    hostname: ntp-client
+    image: ${CLIENT_IMAGE}
+    pull_policy: never
+    command: /run.sh client
+    depends_on:
+      - server
+    volumes:
+      - ${PERM_DIR}:/data
+    networks:
+      zeitwaage:
+        aliases:
+          - ntp-client
+
+  server_pcap:
+    image: nicolaka/netshoot
+    depends_on:
+      - server
+    network_mode: service:server
+    # TODO: Add NTS port as well
+    command: tcpdump -i eth0 'udp port 1123' -w /data/server.pcap
+    volumes:
+      - ${PERM_DIR}:/data
+
+networks:
+  zeitwaage:
+    enable_ipv4: true
+    enable_ipv6: false

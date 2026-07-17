@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "zeitwaage"
+version = "0.1.0"
+description = "NTPv5 interop testing harness"
+license = "Apache-2.0"
+authors = [
+    "Sarah Grant <sarah.grant.ietf@gmail.com>",
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pyyaml = "^6.0.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.3"
+taskipy = "^1.14.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry.scripts]
+earnshaw = 'zeitwaage.cli:main'
+
+[tool.taskipy.tasks]
+update = { cmd = "git submodule update --recursive --remote", help = "Pull all implementations code from main/master branch" }
+build = { cmd = "docker compose -f implementations/docker-compose.yml build --no-cache", help = "Build all containers" }
