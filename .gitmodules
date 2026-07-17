@@ -10,3 +10,10 @@
 	path = implementations/ntp5-exp/ntp5-exp
 	url = https://github.com/mlichvar/ntp5-exp.git
 	branch = main
+[submodule "implementations/ntp-nts-tool/ntp-nts-tool"]
+	path = implementations/ntp-nts-tool/ntp-nts-tool
+	url = https://github.com/SerbanOrza/ntp-nts-tool.git
+[submodule "implementations/ntp-go/ntp-go"]
+	path = implementations/ntp-go/ntp-go
+	url = https://github.com/beevik/ntp.git
+	branch = ntp5
