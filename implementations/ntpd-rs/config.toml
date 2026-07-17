@@ -1,0 +1,11 @@
+[observability]
+log-level = "debug"
+
+[[server]]
+listen = "0.0.0.0:1123" # Just to get a non-privileged port number
+
+[[nts-ke-server]]
+listen = "0.0.0.0:4460"
+ntp-server = "127.0.0.1:1123"
+certificate-chain-path = "/usr/src/app/cert/ntske.crt"
+private-key-path = "/usr/src/app/cert/ntske.key"

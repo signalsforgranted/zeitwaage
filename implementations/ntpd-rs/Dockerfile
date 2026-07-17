@@ -1,4 +1,4 @@
-FROM rust:1.88
+FROM rust:1.95
 
 WORKDIR /usr/src/app
 
@@ -14,4 +14,4 @@ RUN mkdir cert && openssl req -x509 \
     -out cert/ntske.crt \
     -subj "/CN=nts-ke-serve"
 
-COPY decoderpick.toml .
+COPY config.toml .
