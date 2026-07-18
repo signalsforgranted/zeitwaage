@@ -1,6 +1,6 @@
 name: "zeitwaage"
 services:
-  ntpdrs:
+  ntpd-rs:
     build: "./ntpd-rs"
 
   chrony-ntp5:
