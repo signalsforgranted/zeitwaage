@@ -21,7 +21,7 @@
 #
 
 implementations:
-  ntpdrs:
+  ntpd-rs:
     enabled: true
     client: true
     server: true

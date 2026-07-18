@@ -142,7 +142,6 @@ def main() -> None:
         save_results(output_dir, results)
 
 
-
 # For each implementation that we know of, based on it having a client and/or
 # server, work out permutations of all.
 def generate_permutations(impls: Implementations) -> list[Permutation]:
@@ -210,9 +209,9 @@ def run_permutation(
         f"Preparing to run for server: {permutation['server']} client: {permutation['client']}"
     )
     env = {
-        "SERVER_IMAGE": f"plummet-{permutation['server']}:latest",
-        "CLIENT_IMAGE": f"plummet-{permutation['client']}:latest",
-        "PERM_NAME": f"plummet-{permutation['server']}-{permutation['client']}",
+        "SERVER_IMAGE": f"zeitwaage-{permutation['server']}:latest",
+        "CLIENT_IMAGE": f"zeitwaage-{permutation['client']}:latest",
+        "PERM_NAME": f"zeitwaage-{permutation['server']}-{permutation['client']}",
         "PERM_DIR": str(perm_dir),
     }
 
@@ -223,10 +222,10 @@ def run_permutation(
     perm_config = os.path.abspath(args.perm_config)
     perm_cmd = f"{args.container} compose -f {perm_config} up"
     logger.debug(f"Running `{perm_cmd}` with a {args.timeout} second timeout...")
+    logger.debug(env)
 
     if args.dry_run:
         logger.info("This is the bit where we pretend to run, but are not!")
-        return None
 
     output = subprocess.PIPE
     if args.workers > 1:
@@ -244,44 +243,19 @@ def run_permutation(
             f"Terminating server: {permutation['server']} client: {permutation['client']}"
         )
     cleanup_cmd = f"{args.container} compose -f {perm_config} down --remove-orphans"
+    logger.debug(f"Running cleanup commmand {cleanup_cmd}")
     subprocess.run(cleanup_cmd.split(" "), env=env, stdout=output, stderr=output)
-
-    with perm_dir.joinpath("client.log").open() as f:
-        client_log = f.read()
-
-    success = None
-    failure = None
-
-    if permutation["regex_success"] is not None:
-        success = re.search(permutation["regex_success"], client_log) is not None
-
-    if permutation["regex_failure"] is not None:
-        failure = re.search(permutation["regex_failure"], client_log) is not None
-
-    result = "unknown"
-    if success and failure:
-        result = "error"
-    elif success and not failure:
-        result = "success"
-    elif failure and not success:
-        result = "failure"
-
-    with perm_dir.joinpath("server.log").open() as f:
-        server_log = f.read()
-
-    with perm_dir.joinpath("server.pcap").open("rb") as f:
-        pcap = base64.b64encode(f.read()).decode("ASCII")
 
     return (
         permutation["server"],
         permutation["client"],
         {
             "client": permutation["client"],
-            "client_log": client_log,
+            "client_log": "client_log",
             "server": permutation["server"],
-            "result": result,
-            "server_log": server_log,
-            "pcap": pcap,
+            "result": "result",
+            "server_log": "server_log",
+            "pcap": "pcap",
         },
     )
 

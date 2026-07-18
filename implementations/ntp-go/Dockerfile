@@ -4,6 +4,7 @@ WORKDIR /build
 COPY ntp-go/ .
 RUN mkdir -p /build/cmd
 COPY main.go /build/cmd
+COPY run.sh /
 
 RUN go mod verify
 

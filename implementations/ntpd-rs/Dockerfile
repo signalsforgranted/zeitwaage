@@ -36,4 +36,4 @@ RUN --mount=type=cache,target=/usr/local/cargo/git/db \
 
 # Copy both the server and client configuration over
 COPY *.toml ./config/
-COPY run.sh .
+COPY run.sh /

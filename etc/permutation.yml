@@ -16,7 +16,7 @@ services:
     volumes:
       - ${PERM_DIR}:/data
     networks:
-      plummet:
+      zeitwaage:
         aliases:
           - ntp-server
 

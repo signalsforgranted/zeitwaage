@@ -8,4 +8,4 @@ accept-ntp-versions = [ 4, 5 ]
 [synchronization]
 local-stratum=1
 minimum-agreed-sources=1
-reference-id=XNON # David told me to put this here
+reference-id="XNON" # David told me to put this here
