@@ -1,0 +1,47 @@
+#
+#      oOoOoOoOo   This YAML file forms part of the implementation config,
+#    0oOoOoOo0/|   which tells plummet which implementations exist, should be
+#    | .---. | |   run, and if they have client and/or server capability. The
+#    |{  0  }| |   names here should match the repository name under the
+#    |{ \ . }| |   implementations/ directory, and all the flags consistent.
+#    |{9 x 3}| |
+#    |{     }| |   Just a tip: when integrating a new implementation, disable
+#    |{  6  }| |   all but your new implementation and one other that has both
+#    | `---' | o   client and server support, so that way you avoid having to
+#    |_______|/    run against every permutation and it taking a lot of time,
+#    \ ____//      which we clearly don't have enough of, poetically.
+#      `----'
+#        \\
+#          \\
+#          \\
+#            \\
+#            /'\s
+#          :F_P:
+#            \_/
+#
+
+implementations:
+  ntpdrs:
+    enabled: true
+    client: true
+    server: true
+  
+  ntp5-exp:
+    enabled: true
+    client: true
+    server: true
+  
+  chrony-ntp5:
+    enabled: false
+    client: true
+    server: true
+  
+  ntp-go:
+    enabled: false
+    client: true
+    server: false
+  
+  ntp-nts-tool:
+    enabled: false
+    client: true
+    server: false
