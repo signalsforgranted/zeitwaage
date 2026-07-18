@@ -1,0 +1,7 @@
+[observability]
+log-level = "debug"
+
+[synchronization]
+local-stratum=1
+minimum-agreed-sources=1
+reference-id=XNON # David told me to put this here

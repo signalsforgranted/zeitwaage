@@ -1,16 +1,12 @@
 [observability]
 log-level = "debug"
 
+[[source]]
+address = "ntp-server"
+initial-poll-interval = 0
+poll-interval-limits = { min = 0, max = 0 }
+
 [synchronization]
 local-stratum=1
 minimum-agreed-sources=1
 reference-id=XNON # David told me to put this here
-
-[[server]]
-listen = "0.0.0.0:1123" # Just to get a non-privileged port number
-
-[[nts-ke-server]]
-listen = "0.0.0.0:4460"
-ntp-server = "127.0.0.1:1123"
-certificate-chain-path = "/usr/src/app/cert/ntske.crt"
-private-key-path = "/usr/src/app/cert/ntske.key"

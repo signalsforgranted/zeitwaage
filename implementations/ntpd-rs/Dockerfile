@@ -33,3 +33,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/git/db \
     && cp target/release/ntp-daemon /build/artifacts \
     && cp target/release/ntp-ctl /build/artifacts \
     && cp target/release/ntp-metrics-exporter /build/artifacts
+
+# Copy both the server and client configuration over
+COPY *.toml ./config/
+COPY run.sh .
