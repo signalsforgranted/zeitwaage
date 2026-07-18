@@ -1,6 +1,10 @@
 [observability]
 log-level = "debug"
 
+[[server]]
+listen = "0.0.0.0:1123"
+accept-ntp-versions = [ 4, 5 ]
+
 [synchronization]
 local-stratum=1
 minimum-agreed-sources=1

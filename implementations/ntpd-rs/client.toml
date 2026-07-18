@@ -2,9 +2,10 @@
 log-level = "debug"
 
 [[source]]
-address = "ntp-server"
+address = "ntp-server:1123"
 initial-poll-interval = 0
 poll-interval-limits = { min = 0, max = 0 }
+ntp-version = 5
 
 [synchronization]
 local-stratum=1
