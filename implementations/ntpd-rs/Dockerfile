@@ -1,17 +1,29 @@
-FROM rust:1.95
+ARG RUST_VERSION=1
 
-WORKDIR /usr/src/app
+FROM rust:${RUST_VERSION}-bookworm AS builder
 
-COPY ntpd-rs .
+# Use a shell that exists whenever it encounters errors
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 
-RUN cargo build --release --all
+RUN apt update \
+    && apt install -y --no-install-recommends \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/* /tmp/*
 
-RUN mkdir cert && openssl req -x509 \
-    -newkey ed25519 \
-    -days 365 \
-    -noenc \
-    -keyout cert/ntske.key \
-    -out cert/ntske.crt \
-    -subj "/CN=nts-ke-serve"
+WORKDIR /build
 
-COPY config.toml .
+COPY ntpd-rs /build
+
+
+# Run the build command.
+# Note that this mounts several cache directories to speed up subsequent builds.
+# After build, we move the binaries out of the target directory because that directory
+# will not be available in the next steps (as it is a cached directory).
+RUN --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/build/target/ \
+    cargo build --locked --release --features="${NTPDRS_BUILD_FEATURES}" \
+    && mkdir -p /build/artifacts \
+    && cp target/release/ntp-daemon /build/artifacts \
+    && cp target/release/ntp-ctl /build/artifacts \
+    && cp target/release/ntp-metrics-exporter /build/artifacts

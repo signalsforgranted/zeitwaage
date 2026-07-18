@@ -1,6 +1,10 @@
 [observability]
 log-level = "debug"
 
+[synchronization]
+local-stratum=1
+reference-id=XNON # David told me to put this here
+
 [[server]]
 listen = "0.0.0.0:1123" # Just to get a non-privileged port number
 
