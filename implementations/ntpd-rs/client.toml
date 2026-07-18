@@ -2,12 +2,13 @@
 log-level = "debug"
 
 [[source]]
+mode = "server"
 address = "ntp-server:1123"
 initial-poll-interval = 0
 poll-interval-limits = { min = 0, max = 0 }
 ntp-version = 5
 
 [synchronization]
-local-stratum=1
-minimum-agreed-sources=1
-reference-id="XNON" # David told me to put this here
+local-stratum = 2
+minimum-agreeing-sources = 1
+reference-id = "XNON" # David told me to put this here
