@@ -21,7 +21,7 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-earnshaw = 'zeitwaage.cli:main'
+zeitwaage = 'zeitwaage.cli:main'
 
 [tool.taskipy.tasks]
 update = { cmd = "git submodule update --recursive --remote", help = "Pull all implementations code from main/master branch" }
