@@ -51,9 +51,10 @@ class Permutation(TypedDict):
     regex_success: str | None
     regex_failure: str | None
 
+logger = logging.getLogger('zeitwaage')
+
 
 def main() -> None:
-    logger = logging.getLogger('zeitwaage')
     parser = ArgumentParser(description=CMD_INFO)
 
     parser.add_argument(
@@ -120,6 +121,8 @@ def main() -> None:
     # Prepare the location
     start_time = datetime.datetime.now(datetime.timezone.utc)
     results_dir = start_time.strftime("%Y%m%dT%H%M%SZ")  # Colons can be iffy
+
+    output_dir = Path(args.output_dir)
 
     if not output_dir.is_absolute():
         output_dir = output_dir.absolute()
