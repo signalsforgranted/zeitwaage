@@ -1,0 +1,200 @@
+From d967418fa3a879faa8ebaea0efa4f3d873d74829 Mon Sep 17 00:00:00 2001
+From: David Venhoek <david@tweedegolf.com>
+Date: Sat, 18 Jul 2026 11:03:35 +0200
+Subject: [PATCH] Prototype for not touching the system clock.
+
+---
+ ntp.toml                 | 16 +++++--
+ ntpd/src/daemon/clock.rs | 98 ++++++++++++++++++++++++++++------------
+ 2 files changed, 80 insertions(+), 34 deletions(-)
+
+diff --git a/ntp.toml b/ntp.toml
+index 7dd28f29..88f16a1d 100644
+--- a/ntp.toml
++++ b/ntp.toml
+@@ -5,10 +5,10 @@ observation-path = "/var/run/ntpd-rs/observe"
+ 
+ # Pool servers from ntppool.org. See http://www.pool.ntp.org/join.html
+ # for more information
+-[[source]]
+-mode = "pool"
+-address = "ntpd-rs.pool.ntp.org"
+-count = 4
++#[[source]]
++#mode = "pool"
++#address = "ntpd-rs.pool.ntp.org"
++#count = 4
+ 
+ # Alternative configuration for IPv6 only machines
+ #[[source]]
+@@ -16,6 +16,12 @@ count = 4
+ #address = "2.pool.ntp.org"
+ #count = 4
+ 
++[[source]]
++mode = "nts"
++address = "time.tweede.golf"
++initial-poll-interval = 0
++poll-interval-limits = { min = 0, max = 0 }
++
+ # Below are configured various thresholds beyond which ntpd-rs will not
+ # change the system clock. CHANGE THESE TO MATCH YOUR SECURITY NEEDS!
+ # For guidance, see OPERATIONAL_CONSIDERATIONS.md
+@@ -23,4 +29,4 @@ count = 4
+ single-step-panic-threshold = 1800
+ startup-step-panic-threshold = { forward="inf", backward = 1800 }
+ #accumulated-step-panic-threshold = 1800
+-#minimum-agreeing-sources = 3
++minimum-agreeing-sources = 1
+diff --git a/ntpd/src/daemon/clock.rs b/ntpd/src/daemon/clock.rs
+index dbfbb28d..15a56d51 100644
+--- a/ntpd/src/daemon/clock.rs
++++ b/ntpd/src/daemon/clock.rs
+@@ -1,54 +1,92 @@
+-use clock_steering::{Clock, TimeOffset, unix::UnixClock};
+-use ntp_proto::NtpClock;
++use std::sync::{Mutex, OnceLock};
++
++use clock_steering::{Clock, unix::UnixClock};
++use ntp_proto::{NtpClock, NtpDuration, NtpTimestamp};
+ 
+ use super::util::convert_clock_timestamp;
+ 
++#[derive(Default, Debug)]
++struct ClockState {
++    base: ntp_proto::NtpTimestamp,
++    freq_offset: f64,
++    offset: ntp_proto::NtpDuration,
++}
++
++static CLOCK_STATE: OnceLock<Mutex<ClockState>> = OnceLock::new();
++
+ #[derive(Debug, Clone, Copy)]
+-pub struct NtpClockWrapper(UnixClock);
++pub struct NtpClockWrapper(UnixClock, &'static Mutex<ClockState>);
+ 
+ impl NtpClockWrapper {
+     pub fn new(clock: UnixClock) -> Self {
+-        NtpClockWrapper(clock)
++        let state = CLOCK_STATE.get_or_init(|| Mutex::new(ClockState {
++            base: clock.now().map(convert_clock_timestamp).unwrap(),
++            freq_offset: 0.0,
++            offset: NtpDuration::ZERO,
++        }));
++        NtpClockWrapper(clock, state)
+     }
+ }
+ 
+ impl Default for NtpClockWrapper {
+     fn default() -> Self {
+-        NtpClockWrapper(UnixClock::CLOCK_REALTIME)
++        let clock = UnixClock::CLOCK_REALTIME;
++        let state = CLOCK_STATE.get_or_init(|| Mutex::new(ClockState {
++            base: clock.now().map(convert_clock_timestamp).unwrap(),
++            freq_offset: 0.0,
++            offset: NtpDuration::ZERO,
++        }));
++        NtpClockWrapper(clock, state)
+     }
+ }
+ 
++fn convert_clock_time(timestamp: NtpTimestamp, clock_data: &ClockState) -> NtpTimestamp {
++    let elapsed = timestamp - clock_data.base;
++    let freq_induced = NtpDuration::from_seconds(elapsed.to_seconds() * clock_data.freq_offset);
++    timestamp + freq_induced + clock_data.offset
++}
++
+ impl NtpClock for NtpClockWrapper {
+     type Error = <UnixClock as Clock>::Error;
+ 
+     fn now(&self) -> Result<ntp_proto::NtpTimestamp, Self::Error> {
+-        self.0.now().map(convert_clock_timestamp)
++        self.0.now().map(convert_clock_timestamp).map(|ts| convert_clock_time(ts, &*self.1.lock().unwrap()))
+     }
+ 
+     fn set_frequency(&self, freq: f64) -> Result<ntp_proto::NtpTimestamp, Self::Error> {
+-        self.0
+-            .set_frequency(freq * 1e6)
+-            .map(convert_clock_timestamp)
++        let mut state = self.1.lock().unwrap();
++
++        let ts = self.0.now().map(convert_clock_timestamp)?;
++        let cur = convert_clock_time(ts, &*state);
++
++        *state = ClockState {
++            base: ts,
++            freq_offset: freq,
++            offset: cur - ts,
++        };
++
++        Ok(cur)
+     }
+ 
+     fn get_frequency(&self) -> Result<f64, Self::Error> {
+-        self.0.get_frequency().map(|v| v * 1e-6)
++        Ok(self.1.lock().unwrap().freq_offset)
+     }
+ 
+     fn step_clock(
+         &self,
+         offset: ntp_proto::NtpDuration,
+     ) -> Result<ntp_proto::NtpTimestamp, Self::Error> {
+-        let (seconds, nanos) = offset.as_seconds_nanos();
+-        #[allow(clippy::useless_conversion)]
+-        let seconds = seconds.into();
+-        self.0
+-            .step_clock(TimeOffset { seconds, nanos })
+-            .map(convert_clock_timestamp)
++        let mut state = self.1.lock().unwrap();
++
++        state.offset += offset;
++        
++        self.0.now().map(convert_clock_timestamp).map(|ts| convert_clock_time(ts, &*state))
+     }
+ 
+     fn disable_ntp_algorithm(&self) -> Result<(), Self::Error> {
+-        self.0.disable_kernel_ntp_algorithm()
++        // Noop now
++        Ok(())
++        //self.0.disable_kernel_ntp_algorithm()
+     }
+ 
+     fn error_estimate_update(
+@@ -56,20 +94,22 @@ impl NtpClock for NtpClockWrapper {
+         est_error: ntp_proto::NtpDuration,
+         max_error: ntp_proto::NtpDuration,
+     ) -> Result<(), Self::Error> {
+-        self.0.error_estimate_update(
+-            core::time::Duration::from_secs_f64(est_error.to_seconds()),
+-            core::time::Duration::from_secs_f64(max_error.to_seconds()),
+-        )
++        Ok(())
++        //self.0.error_estimate_update(
++        //    core::time::Duration::from_secs_f64(est_error.to_seconds()),
++        //    core::time::Duration::from_secs_f64(max_error.to_seconds()),
++        //)
+     }
+ 
+     fn status_update(&self, leap_status: ntp_proto::NtpLeapIndicator) -> Result<(), Self::Error> {
+-        self.0.set_leap_seconds(match leap_status {
+-            ntp_proto::NtpLeapIndicator::NoWarning => clock_steering::LeapIndicator::NoWarning,
+-            ntp_proto::NtpLeapIndicator::Leap61 => clock_steering::LeapIndicator::Leap61,
+-            ntp_proto::NtpLeapIndicator::Leap59 => clock_steering::LeapIndicator::Leap59,
+-            ntp_proto::NtpLeapIndicator::Unknown | ntp_proto::NtpLeapIndicator::Unsynchronized => {
+-                clock_steering::LeapIndicator::Unknown
+-            }
+-        })
++        Ok(())
++        //self.0.set_leap_seconds(match leap_status {
++        //    ntp_proto::NtpLeapIndicator::NoWarning => clock_steering::LeapIndicator::NoWarning,
++        //    ntp_proto::NtpLeapIndicator::Leap61 => clock_steering::LeapIndicator::Leap61,
++        //    ntp_proto::NtpLeapIndicator::Leap59 => clock_steering::LeapIndicator::Leap59,
++        //    ntp_proto::NtpLeapIndicator::Unknown | ntp_proto::NtpLeapIndicator::Unsynchronized => {
++        //        clock_steering::LeapIndicator::Unknown
++        //    }
++        //})
+     }
+ }
+-- 
+2.47.3
+

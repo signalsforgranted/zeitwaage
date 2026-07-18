@@ -14,6 +14,12 @@ WORKDIR /build
 
 COPY ntpd-rs /build
 
+# This patch (provided by David Venhoek) attempts to disable all the system calls
+# to the clock to prevent steering of the OS. It does lead to unstable behaviour,
+# but in the context of networking interop, that's fine.
+COPY ./0001-Prototype-for-not-touching-the-system-clock.patch /build/
+# Not using git apply as it gets tripped up by the repository being a submodule
+RUN patch -p1 < 0001-Prototype-for-not-touching-the-system-clock.patch
 
 # Run the build command.
 # Note that this mounts several cache directories to speed up subsequent builds.
