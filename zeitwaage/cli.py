@@ -138,7 +138,8 @@ def main() -> None:
     results = execute_permutations(args, output_dir, permutations)
 
     # Create JSON file with array of results.
-    save_results(output_dir, results)
+    if not args.dry_run:
+        save_results(output_dir, results)
 
 
 
