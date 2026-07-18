@@ -1,3 +1,5 @@
 FROM python:3.11
 
-COPY . .
+WORKDIR /build
+
+COPY . /build
