@@ -8,3 +8,9 @@ services:
   
   ntp5-exp:
     build: "./ntp5-exp"
+  
+  ntp-nts-tool:
+    build: "./ntp-nts-tool"
+  
+  ntp-go:
+    build: "./ntp-go"
