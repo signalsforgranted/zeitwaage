@@ -1,0 +1,3 @@
+*.swp
+zeitwaage/__pycache__
+results/*
