@@ -32,7 +32,7 @@ implementations:
     server: true
   
   chrony-ntp5:
-    enabled: false
+    enabled: true
     client: true
     server: true
   

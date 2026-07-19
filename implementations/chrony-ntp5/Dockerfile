@@ -6,6 +6,8 @@ SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 WORKDIR /build
 
 COPY chrony-ntp5 /build
+COPY run.sh /
+COPY *.conf /build
 
 RUN apt-get update && apt-get install -y gcc libc6 libc6-dev bison make pkg-config libcap-dev libseccomp-dev libgnutls30
 
