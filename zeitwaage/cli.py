@@ -251,11 +251,11 @@ def run_permutation(
         permutation["client"],
         {
             "client": permutation["client"],
-            "client_log": "client_log",
+            "client_log": client_log,
             "server": permutation["server"],
-            "result": "result",
-            "server_log": "server_log",
-            "pcap": "pcap",
+            "result": "unknown",
+            "server_log": server_log,
+            "pcap": pcap,
         },
     )
 
