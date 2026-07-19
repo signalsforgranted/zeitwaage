@@ -3,7 +3,11 @@
 MODE=$1
 
 if [[ "$MODE" == "client" ]]; then
-    python /build/ntpnode.py -d ntp-server:1123 &> /data/client.log;
+    echo "Running with version negotiation";
+    python /build/ntpnode.py -d ntp-server -p 1123 &> /data/client.log;
+    sleep 1;
+    echo "Explicitly sending version 5";
+    python /build/ntpnode.py -d ntp-server -p 1123 &>> /data/client.log;
 elif [[ "$MODE" == "server" ]]; then
     python /build/ntpnode.py -d -l -p 1123 &> /data/server.log;
 else
