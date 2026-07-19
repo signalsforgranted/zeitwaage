@@ -37,11 +37,11 @@ implementations:
     server: true
   
   ntp-go:
-    enabled: false
+    enabled: true
     client: true
     server: false
   
   ntp-nts-tool:
-    enabled: false
+    enabled: true
     client: true
     server: false

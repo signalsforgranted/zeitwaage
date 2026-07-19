@@ -3,7 +3,7 @@
 MODE=$1
 
 if [[ "$MODE" == "client" ]]; then
-    ./ntp-go-client -host ntp-server -port 1123 &> /data/client.log;
+    /build/ntp-go-client -host ntp-server -port 1123 &> /data/client.log;
 elif [[ "$MODE" == "server" ]]; then
     echo "Server mode not supported!";
     exit 1;
