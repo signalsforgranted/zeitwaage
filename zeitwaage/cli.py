@@ -226,6 +226,7 @@ def run_permutation(
 
     if args.dry_run:
         logger.info("This is the bit where we pretend to run, but are not!")
+        return None
 
     output = subprocess.PIPE
     if args.workers > 1:
