@@ -36,6 +36,7 @@ services:
 
   server_pcap:
     image: nicolaka/netshoot
+    pull_policy: missing
     depends_on:
       - server
     network_mode: service:server
