@@ -251,11 +251,11 @@ def run_permutation(
         permutation["client"],
         {
             "client": permutation["client"],
-            "client_log": client_log,
+            "client_log": str(perm_dir / 'client.log'),
             "server": permutation["server"],
             "result": "unknown",
-            "server_log": server_log,
-            "pcap": pcap,
+            "server_log": str(perm_dir / 'server.log'),
+            "pcap": str(perm_dir / 'server.pcap'),
         },
     )
 
@@ -284,3 +284,4 @@ def packet_tree_str(packet: Any, indent: int = 0) -> str:
 
 if __name__ == '__main__':
     main()
+
