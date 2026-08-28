@@ -1,0 +1,30 @@
+From: zeitwaage interop harness
+Subject: [PATCH] Keep the stratum-1 leap indicator across time snapshot updates
+
+NtpManager::new marks a local-stratum=1 server as synchronized by setting
+time_snapshot.leap_indicator, but the daemon's timer loop calls
+update_time_snapshot() unconditionally and assigns the whole struct, so that
+value is discarded on the first tick. With no sources the controller never
+produces a leap indicator of its own, leaving the server advertising
+flags.synchronized together with leap=Unknown - which conforming clients
+(chrony, ntp5-exp) correctly refuse.
+
+Re-assert the stratum-1 value after the assignment.
+
+---
+--- a/ntp-proto/src/system.rs
++++ b/ntp-proto/src/system.rs
+@@ -275,6 +275,12 @@
+     }
+
+     pub fn update_time_snapshot(&self, time_snapshot: TimeSnapshot) {
+-        self.server_info.write().unwrap().time_snapshot = time_snapshot;
++        let mut server_info = self.server_info.write().unwrap();
++        server_info.time_snapshot = time_snapshot;
++        // A stratum 1 server has no sources, so the controller never yields a
++        // leap indicator and the value set in new() would be lost here.
++        if self.synchronization_config.local_stratum == 1 {
++            server_info.time_snapshot.leap_indicator = NtpLeapIndicator::NoWarning;
++        }
+     }
+ }

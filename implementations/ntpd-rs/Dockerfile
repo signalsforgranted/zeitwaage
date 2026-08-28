@@ -14,12 +14,16 @@ WORKDIR /build
 
 COPY ntpd-rs /build
 
+COPY ./*.patch /build/
+
 # This patch (provided by David Venhoek) attempts to disable all the system calls
 # to the clock to prevent steering of the OS. It does lead to unstable behaviour,
 # but in the context of networking interop, that's fine.
-COPY ./0001-Prototype-for-not-touching-the-system-clock.patch /build/
-# Not using git apply as it gets tripped up by the repository being a submodule
 RUN patch -p1 < 0001-Prototype-for-not-touching-the-system-clock.patch
+
+# Even with local-stratum = 1 set, the leap indicator will end up being set to
+# "unknown", which clients will interpret as unsynchronised and thus fail.
+RUN patch -p1 < 0002-Keep-stratum-1-leap-indicator.patch
 
 # Run the build command.
 # Note that this mounts several cache directories to speed up subsequent builds.
