@@ -89,7 +89,7 @@ def main() -> None:
         help="Path to the HTML template for reporting",
     )
     parser.add_argument(
-        "--timeout", default=10, help="Timeout in seconds for each permutation run"
+        "--timeout", default=30, help="Timeout in seconds for each permutation run"
     )
     parser.add_argument(
         "--workers",
