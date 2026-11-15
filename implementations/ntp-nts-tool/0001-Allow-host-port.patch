@@ -1,0 +1,24 @@
+From: zeitwaage interop harness
+Subject: [PATCH] Allow host:port
+
+- performNTPv5Measurement always appended :123, so "ntp-server:1123"
+  became "[ntp-server:1123]:123" and failed DNS lookup. Only add the
+  default port when none is given.
+
+---
+diff --git a/NTPv5.go b/NTPv5.go
+index 9199f17..07dc1cc 100644
+--- a/NTPv5.go
++++ b/NTPv5.go
+@@ -253,7 +253,10 @@ func performNTPv5Measurement(server string, timeout float64, draft string) (map[
+ 	var output strings.Builder
+ 	error_message := map[string]interface{}{}
+ 	//addr := fmt.Sprintf("%s:%d", server, NTP_PORT)
+-	addr := net.JoinHostPort(server, strconv.Itoa(123))
++	addr := server
++	if _, _, err := net.SplitHostPort(server); err != nil {
++		addr = net.JoinHostPort(server, strconv.Itoa(123))
++	}
+
+ 	conn, err := net.DialTimeout("udp", addr, time.Duration(timeout)*time.Second)
+ 	if err != nil {
