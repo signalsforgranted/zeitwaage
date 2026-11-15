@@ -26,7 +26,11 @@ services:
     pull_policy: never
     command: /run.sh client
     depends_on:
-      - server
+      # Waits until the server is listening and tcpdump is capturing (see
+      # server_pcap healthcheck); plain `depends_on: server` only waits for
+      # the container to start, and one-shot clients lose their only query.
+      server_pcap:
+        condition: service_healthy
     volumes:
       - ${PERM_DIR}:/data
     networks:
@@ -42,6 +46,13 @@ services:
     network_mode: service:server
     # TODO: Add NTS port as well
     command: tcpdump -i eth0 'udp port 1123' -w /data/server.pcap
+    # Shares the server's network namespace, so `ss` here sees the server's
+    # sockets regardless of what tools the server image ships.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x tcpdump >/dev/null && ss -Hlun 'sport = :1123' | grep -q ."]
+      interval: 1s
+      timeout: 1s
+      retries: 20
     volumes:
       - ${PERM_DIR}:/data
 
