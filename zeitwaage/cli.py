@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -74,8 +75,8 @@ def main() -> None:
     parser.add_argument(
         "--container",
         type=str,
-        default="/usr/local/bin/docker",
-        help="Path to docker or your preferred container manager",
+        default=None,
+        help="Path to docker or your preferred container manager (default: docker found on PATH)",
     )
     parser.add_argument(
         "--perm-config",
@@ -107,6 +108,14 @@ def main() -> None:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
+
+    container = shutil.which(args.container or "docker")
+    if container is None:
+        parser.error(
+            f"could not find {args.container or 'docker'!r}; "
+            "pass --container /path/to/docker"
+        )
+    args.container = container
 
     try:
         args.impls = yaml.safe_load(args.impls.read())
@@ -209,6 +218,7 @@ def run_permutation(
         f"Preparing to run for server: {permutation['server']} client: {permutation['client']}"
     )
     env = {
+        **os.environ,
         "SERVER_IMAGE": f"zeitwaage-{permutation['server']}:latest",
         "CLIENT_IMAGE": f"zeitwaage-{permutation['client']}:latest",
         "PERM_NAME": f"zeitwaage-{permutation['server']}-{permutation['client']}",
