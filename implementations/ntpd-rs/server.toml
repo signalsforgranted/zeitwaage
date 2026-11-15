@@ -2,10 +2,14 @@
 log-level = "debug"
 
 [[server]]
+type = "ntp"
 listen = "0.0.0.0:1123"
 accept-ntp-versions = [ 4, 5 ]
 
+# Only honoured with 0002-Expose-local-stratum-and-reference-id.patch applied
 [synchronization]
 local-stratum = 1
-minimum-agreeing-sources = 1
 reference-id = "XNON" # David told me to put this here
+
+[system-clock]
+steered = false

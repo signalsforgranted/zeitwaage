@@ -1,0 +1,101 @@
+From: zeitwaage interop harness
+Subject: [PATCH] Expose local-stratum and reference-id in the daemon config
+
+Against ntpd-rs 2.0.0-alpha.20261113 (b7b1e24d).
+
+The daemon passes NtpConfig::default() to System::new (FIXME upstream), so
+local-stratum and reference-id can't be configured and a server always
+reports stratum 16. Add a [synchronization] section with those two keys
+and pass it through.
+
+---
+diff --git a/ntp-proto/src/lib.rs b/ntp-proto/src/lib.rs
+index 5e60124..b77e67a 100644
+--- a/ntp-proto/src/lib.rs
++++ b/ntp-proto/src/lib.rs
+@@ -131,7 +131,7 @@ impl std::fmt::Display for ClockId {
+ }
+ 
+ mod exports {
+-    pub use super::config::{NtpConfig, SourceConfig, StepThreshold};
++    pub use super::config::{NtpConfig, ReferenceIdConfig, SourceConfig, StepThreshold};
+     pub use super::identifiers::ReferenceId;
+     #[cfg(feature = "__internal-fuzz")]
+     pub use super::ipfilter::fuzz::fuzz_ipfilter;
+diff --git a/ntpd/src/daemon/config/mod.rs b/ntpd/src/daemon/config/mod.rs
+index 669756d..d27d0b7 100644
+--- a/ntpd/src/daemon/config/mod.rs
++++ b/ntpd/src/daemon/config/mod.rs
+@@ -213,6 +213,38 @@ impl Default for FilterConfig {
+     }
+ }
+ 
++#[derive(Debug, Clone, PartialEq, Configurable)]
++pub(crate) struct SynchronizationConfig {
++    /// Stratum of the local clock when not synchronized through NTP.
++    #[config(rename = "local-stratum", default = 16)]
++    pub(crate) local_stratum: u8,
++    /// Reference ID advertised when local-stratum is 1 (up to 4 characters).
++    #[config(rename = "reference-id", default = String::from("XNON"))]
++    pub(crate) reference_id: String,
++}
++
++impl Default for SynchronizationConfig {
++    fn default() -> Self {
++        let mut partial = <Self as Configurable>::Node::default();
++        partial.apply_defaults();
++        partial.resolve(&mut ConfigPath::root()).unwrap()
++    }
++}
++
++impl SynchronizationConfig {
++    pub(crate) fn generate_ntp_config(
++        &self,
++    ) -> Result<ntp_proto::NtpConfig, serde::de::value::Error> {
++        let reference_id = serde::de::IntoDeserializer::<serde::de::value::Error>::into_deserializer(
++            self.reference_id.as_str(),
++        );
++        Ok(ntp_proto::NtpConfig {
++            local_stratum: self.local_stratum,
++            reference_id: ntp_proto::ReferenceIdConfig::deserialize(reference_id)?,
++        })
++    }
++}
++
+ #[derive(Debug, Clone, PartialEq, Configurable)]
+ pub struct NtsCookieKeys {
+     /// Number of old keys to keep around
+@@ -358,6 +390,7 @@ pub struct Config {
+     #[config(rename = "csptp")]
+     pub csptp: CsptpConfig,
+     pub filter: FilterConfig,
++    pub synchronization: SynchronizationConfig,
+     pub observability: ObservabilityConfig,
+ }
+ 
+diff --git a/ntpd/src/daemon/mod.rs b/ntpd/src/daemon/mod.rs
+index d6d082a..ba7cbda 100644
+--- a/ntpd/src/daemon/mod.rs
++++ b/ntpd/src/daemon/mod.rs
+@@ -28,7 +28,7 @@ use std::{error::Error, io::IsTerminal, path::Path};
+ use ::tracing::{info, warn};
+ use clock_steering::unix::UnixClock;
+ pub use config::Config;
+-use ntp_proto::{NtpConfig, SourceConfig};
++use ntp_proto::SourceConfig;
+ pub use observer::ObservableState;
+ use statime_algo::{ClockConfig, ControllerConfig, StdKalmanStorage};
+ use statime_base::Duration;
+@@ -200,8 +200,10 @@ fn run(options: &NtpDaemonOptions) -> Result<(), Box<dyn Error>> {
+                 minimum_retry_timeout: std::time::Duration::from_secs(1),
+                 maximum_retry_timeout: std::time::Duration::from_mins(10),
+             },
+-            // FIXME: Add ntp configuration back in.
+-            NtpConfig::default(),
++            config
++                .synchronization
++                .generate_ntp_config()
++                .map_err(|error| std::io::Error::other(format!("invalid reference-id: {error}")))?,
+             config.generate_keyset_config(),
+             #[cfg(target_os = "linux")]
+             config.generate_csptp_config(),

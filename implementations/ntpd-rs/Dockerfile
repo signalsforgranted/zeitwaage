@@ -16,14 +16,10 @@ COPY ntpd-rs /build
 
 COPY ./*.patch /build/
 
-# This patch (provided by David Venhoek) attempts to disable all the system calls
-# to the clock to prevent steering of the OS. It does lead to unstable behaviour,
-# but in the context of networking interop, that's fine.
-RUN patch -p1 < 0001-Prototype-for-not-touching-the-system-clock.patch
-
-# Even with local-stratum = 1 set, the leap indicator will end up being set to
-# "unknown", which clients will interpret as unsynchronised and thus fail.
-RUN patch -p1 < 0002-Keep-stratum-1-leap-indicator.patch
+# The 2.0 alphas ignore local-stratum/reference-id entirely (FIXME upstream), so
+# a server always reports stratum 16. This patch adds a [synchronization]
+# section to the config and passes it through.
+RUN patch -p1 < 0002-Expose-local-stratum-and-reference-id.patch
 
 # Run the build command.
 # Note that this mounts several cache directories to speed up subsequent builds.
